@@ -192,12 +192,47 @@ const statsObserver = new IntersectionObserver(
 statValues.forEach((stat) => statsObserver.observe(stat));
 
 if (pilotForm) {
-  pilotForm.addEventListener("submit", (event) => {
+  pilotForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = pilotForm.querySelector("button");
+    const buttonOriginalHtml = button ? button.innerHTML : "";
+
     if (button) {
       button.disabled = true;
-      button.innerHTML = "<span>Demo Request Sent</span>";
+      button.innerHTML = "<span>Sending Request...</span>";
+    }
+
+    try {
+      const formData = new FormData(pilotForm);
+      const payload = Object.fromEntries(formData.entries());
+      const response = await fetch("/api/demo-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
+
+      if (button) {
+        button.innerHTML = "<span>Demo Request Sent</span>";
+      }
+
+      pilotForm.reset();
+    } catch (error) {
+      if (button) {
+        button.innerHTML = "<span>Try Again</span>";
+      }
+
+      setTimeout(() => {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = buttonOriginalHtml || "<span>Request Demo Call</span>";
+        }
+      }, 1300);
+
+      return;
     }
   });
 }
